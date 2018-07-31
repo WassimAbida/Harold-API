@@ -10,17 +10,17 @@ For that in this work we intend to use the Autoencoder theory, Restricted Boltzm
 
 
 
-Access to labeled data is not always easy to do, for that two possibilities could be made:
+Access to labeled data is not always easy to acheive, for that two possibilities could be take into account:
 
-- perform data augmentation over a certain data set 
-- unsing the scraping method to download data from web 
+- perform data augmentation over a certain labeled data set 
+- using the scraping method to download data from web 
 
 
-models as Autoencoders, RBM and DBN (Deep Belief Network : a stack of RBM) are trained via a specific process: 
+Models as Autoencoders, RBM and DBN (Deep Belief Network : a stack of RBM) are trained via a specific process: 
 First, model is been trained with unsupervised data in order to learn how to match it's input to it's output, in other words to learn how to reconstruct it's input from the hidden code or so-called features.
 
 Then the model is fine-tuned using labeled data
-
+This process is called semi-supervised learning.
 
 Finally model is tested on unseen data in order to measure its accuracy and efficency.
 
@@ -29,7 +29,7 @@ Finally model is tested on unseen data in order to measure its accuracy and effi
 An small guide to understand the code developed : 
 
 
-- Folder Data contains a first folder including waste images  (data in orginal form) and a second folder containing the data obtained via data augmentation method
+- Folder Data contains a first folder including waste images (data in orginal form) and a second folder containing the data obtained via data augmentation method
 - Folder Models contains two sub-folders :
 	- Clustering : resumes the cluster model, inspired by k-means backed with sklearn library
 	- Deep_Learning : includes python scripts of models developed during my internship, (FC Autoencoder, Convolutional Autoencoder, Denoising Autoencoder, RBM, DBN, Convolutional neural network, VGG16 backed with transfer learning...)
@@ -42,7 +42,7 @@ An small guide to understand the code developed :
 Training deep learning models was acheived using floydhub, a Platform-as-a-Service for training and deploying deep learning models in the cloud.
 
 
-floydhub is flexible in terms of prices for gpu and cpu instance, it is also easy to manage, facility to upload and atttach data, add to managing your workspace and jupyter notebooks.
+floydhub is flexible in terms of prices for GPU and CPU instance, it is also easy to manage, ease to upload and atttach data, add to managing your workspace and jupyter notebooks.
 
 
 
