@@ -39,6 +39,12 @@ An small guide to understand the code developed :
 
 - Folder Services, sums the utilities function used to develop models and to perform clustering and classification tasks
 
+Training deep learning models was acheived using floydhub, a Platform-as-a-Service for training and deploying deep learning models in the cloud.
+
+
+floydhub is flexible in terms of prices for gpu and cpu instance, it is also easy to manage, facility to upload and atttach data, add to managing your workspace and jupyter notebooks.
+
+
 
 
 
