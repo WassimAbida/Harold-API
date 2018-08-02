@@ -1,0 +1,5 @@
+Model ,Cluster model,number of test ,number of cluster ,Accuracy
+Denoise AE ,K-means ,  14 ,3 ,44.3%
+ConvAE , K-means, 14 ,3 ,44.42%
+DBN , K-means , 14,3,36.23%
+RBM ,K-means ,14 ,3 ,45.54%
