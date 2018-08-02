@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://markable.in/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://markable.in//static/css/style.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="https://markable.in/static/editor/css/view_file.css">
+  <link rel="stylesheet" type="text/css" href="https://markable.in/static/css/code.css">
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <h3 id="this-project-is-the-fruit-of-my-internship-within-harold-waste">This project is the fruit of my internship within Harold Waste</h3>
+<p>It sum the deep research in deep learning models in order to perform a classification task over waste images.</p>
+<p>Waste images, having large characteristics and many features, can only be classified using sophisticated models.</p>
+<p>For that in this work we intend to use the Autoencoder theory, Restricted Boltzmann Machines as well as the possbility of transfer learning for pre-trained models to classify our waste images.</p>
+<p>Access to labeled data is not always easy to acheive, for that two possibilities could be take into account:</p>
+<ul>
+<li>perform data augmentation over a certain labeled data set</li>
+<li>using the scraping method to download data from web</li>
+</ul>
+<p>Models as Autoencoders, RBM and DBN (Deep Belief Network : a stack of RBM) are trained via a specific process: First, model is been trained with unsupervised data in order to learn how to match it's input to it's output, in other words to learn how to reconstruct it's input from the hidden code or so-called features.
+Then the model is fine-tuned using labeled data This process is called semi-supervised learning.
+Finally model is tested on unseen data in order to measure its accuracy and efficency.</p>
+<p>An small guide to understand the code developed :</p>
+<ul>
+<li>
+<p>Folder Data contains a first folder including waste images (data in orginal form) and a second folder containing the data obtained via data augmentation method</p>
+</li>
+<li>
+<p>Folder Models contains two sub-folders :</p>
+</li>
+<li>
+<p>Clustering : resumes the cluster model, inspired by k-means backed with sklearn library</p>
+</li>
+<li>
+<p>Deep_Learning : includes python scripts of models developed during my internship, (FC Autoencoder, Convolutional Autoencoder, Denoising Autoencoder, RBM, DBN, Convolutional neural network, VGG16 backed with transfer learning...)</p>
+</li>
+<li>
+<p>Folder Application, contains graphs of trained model, h5 files for saving model's weights, json files for saving model's architectures and a python file detailing the training process and clustering results</p>
+</li>
+<li>
+<p>Folder Services, sums the utilities function used to develop models and to perform clustering and classification tasks</p>
+</li>
+</ul>
+<p>Training deep learning models was acheived using floydhub, a Platform-as-a-Service for training and deploying deep learning models in the cloud.</p>
+<p>floydhub is flexible in terms of prices for GPU and CPU instance, it is also easy to manage, ease to upload and atttach data, add to managing your workspace and jupyter notebooks.</p>
+<h3 id="feature-extraction-process">Feature extraction process</h3>
+<p>In our way to acheive best representation of our data we deploy Deep Learning models for feature extraction.</p>
+<p>State of art, provides sophisticated models such as Autoencoders and Deep Belief Networks (stack of Restricted Boltzamnn Machines).</p>
+<p>The general idea about DBN and autoencoders is to have a model learning how to reconstruct his input via, generally, a concised code representation know as the hidden layer.</p>
+<p>Models will try to ameliorate their representation of data by performing simple comparaison between the input and the reconstructed input found in the output.</p>
+<p>The best encoded input in the hidden layer able to reconstruct our input images with less differences is the wanted feature.</p>
+<p>Many variants of RBMs and Auto Encoders were used to acheive feature extraction.</p>
+<ul>
+<li>For instance we start with bianry RBM's, </li>
+</ul>
+<p>Our RBM contains 256 units within the hidden layer, uses sigmoid as an activation function and was trained using SGD, for 30 epochs with 1e-3 as learning rate and acheived one contrastive divegence iteration inspired by Markov Chain Monte Carlo (MCMC)</p>
+<pre><code>RBM =  BinaryRBM(n_hidden_units=256,
+                 activation_function='sigmoid',
+                 optimization_algorithm='sgd',
+                 learning_rate=1e-3,
+                 n_epochs=30,
+                 contrastive_divergence_iter=1,
+                 batch_size=64,
+                 verbose=True)
+
+</code></pre>
+
+<p>The RBM is then trained over a set of images to acheive feature extraction.</p>
+<p>extracted features where after that saved in .npy files to be reused by clustering models  or a fully connected classifier(details in the next section).</p>
+<ul>
+<li>For more complication, we developed a simple DBN, a stack of two RBM models, each RBM is pre-trained in an unsupervised way to extract features, after that a classifier can be fine-tuned or a clustering method could be taken into account.</li>
+</ul>
+<pre><code>DBN_Featuring = UnsupervisedDBN( hidden_layers_structure=[256, 256],
+                 activation_function='sigmoid',
+                 optimization_algorithm='sgd',
+                 learning_rate_rbm=1e-3,
+                 n_epochs_rbm=10,
+                 contrastive_divergence_iter=1,
+                 batch_size=32,
+                 verbose=True)
+</code></pre>
+
+<p>A full code of semi-supervised training for a DBN, where each RBM is pre-trained for 10 epochs, and fine-tuning the model is done over 50 epochs with SGD algorithm and relu as activation fuction for the hidden layers. </p>
+<pre><code>classifier = SupervisedDBNClassification(hidden_layers_structure=[256, 256],
+                                         learning_rate_rbm=0.05,
+                                         learning_rate=0.1,
+                                         n_epochs_rbm=10,
+                                         n_iter_backprop=50,
+                                         batch_size=32,
+                                         optimization_algorithm='sgd',
+                                         activation_function='relu',
+                                         dropout_p=0.1)
+
+history = classifier.fit(x_train, y_train)
+</code></pre>
+
+<p>Model is inspired from <a href="https://github.com/albertbup">this github project</a></p>
+<ul>
+<li>Our second interest is on Auto Encoders models, especially, Convolutional and Denoising Auto Encoders.</li>
+</ul>
+<p>**   Convolutional Auto Encoder</p>
+<p>We deployed a Conv AE with 16 layers alternating between Convolutional layers, Maxpooling, Upsampling, and two dropout commands for regularization.</p>
+<p>Model is developed with keras library as such </p>
+<pre><code>
+from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Dropout
+from keras.models import Model
+
+input_img = Input( shape=(x_train.shape[1],x_train.shape[2],x_train.shape[3]))
+
+# encoder model 
+x = Conv2D(16, (3,3), activation= 'relu', padding= 'same')(input_img)
+x = MaxPooling2D( (2,2), padding= 'same')(x)
+x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+x = MaxPooling2D((2, 2), padding='same')(x)
+x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+x = MaxPooling2D((2, 2), padding='same')(x)
+x = Dropout(DROPOUT)(x)
+x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
+x = MaxPooling2D((2, 2), padding='same')(x)
+encoded= Conv2D(8, (3,3), activation= 'relu', padding='same')(x)
+
+x= UpSampling2D( (2,2))(encoded)
+x= Conv2D(8, (3,3), activation= 'relu', padding='same')(x)
+x= UpSampling2D( (2,2))(x)
+x= Conv2D(8, (3,3), activation= 'relu', padding='same')(x)
+x= UpSampling2D( (2,2))(x)
+x= Dropout(DROPOUT)(x)
+x= Conv2D(16, (3,3), activation= 'relu', padding='same')(x)
+x= UpSampling2D( (2,2))(x)
+decoded = Conv2D(x_train.shape[3], (3, 3), activation='sigmoid', padding='same')(x)
+autoencoder_model= Model( input_img,decoded)
+
+</code></pre>
+
+<p>After That model is trained for 500 epochs with RMSprop as optimization algorithm, and categorical_crossentropy for loss function (respect to our n classification task where n &gt;= 3).</p>
+<p>We used Tensorboard for tracking variations within accuracy and loss function over the epochs, batch size was fixed to 64.
+When training autoencoders, it is important to track the loss function variations often then the accuracy which is not very representative in this part.</p>
+<pre><code>autoencoder_model.compile(optimizer='RMSprop', loss='categorical_crossentropy', metrics=['accuracy'])
+
+autoencoder_model.fit(x_train, x_train,
+                epochs=EPOCHS,
+                batch_size=BATCHE_SIZE,
+                shuffle=SHUFFLE,
+                validation_split=VALIDATION_SPLIT,
+                callbacks=[TensorBoard(log_dir=Path_to_logs )])
+</code></pre>
+
+<p>After training, and making sure of having sufficent results in terms of input reconstruction, we can use extract an encoder model out of our autoencoder to help us get relevant features.</p>
+<pre><code>encoder = Model( input_img,encoded)
+</code></pre>
+
+<p>and then no need to re-train the encoder, it directly imports weights out of the autoencoder.</p>
+<p>Then encoder can be tested over a new set of un-seen data.</p>
+<p>** Denoise Auto Encoder</p>
+<p>Denoise AE is similar to Convolutional ones but takes as input a noisy version of data and tries to reconstruct a net version with no noise around.</p>
+<p>then our model will be train to reconstruct a clear version of our input data.</p>
+<p>Training Denoising AE is as such </p>
+<pre><code>autoencoder.compile(optimizer='Adam', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+
+
+history = autoencoder.fit(x_train_noisy, x_train,
+            epochs=EPOCHS,
+            atch_size=BATCH_SIZE,
+            shuffle=SHUFFLE,
+            validation_split=VALIDATION_SPLIT,
+            callbacks=[TensorBoard(log_dir=PATH_TO_SAVE_LOGS)])
+</code></pre>
+
+<p>Same as for the Conv Auto Encoder, we can simply get our features from the encoder model extracted from the denoising AE</p>
+<pre><code>encoder= Model(input_img,encoded)
+encoder.summary()
+features = encoder.predict(x_test)
+
+
+</code></pre>
+
+<p>A further possibilty that we used, was to benefit from pre-trained models, especially those with best scores over the state-of-art such as VGG16 or ResNet.</p>
+<p>So the first thing to do was to download the model from internet using keras library, and removing the fully connected part of the model, which returns outputs for a 1000 classes.</p>
+<p>VGG16 is initally trained on 10000 classes of images in imagenet.
+control over the input shape of vgg16 is also possible, in our case we set the input shape to 128x128x3</p>
+<pre><code>from keras.applications.vgg16 import VGG16
+
+model =VGG16(weights='imagenet',classes=NUM_CLASSES,input_shape = (128,128,3),include_top=False)
+
+</code></pre>
+
+<p>After that we set the vgg16 layers to as non-trainable to avoid chaging the weights.</p>
+<p>Weights are the intelligence of a given model.</p>
+<p>Therfore, we add a simple Fully connected layers ( Flatten, Dense, Dense) with the possibilty of some regularizers such as Dropout.</p>
+<p>Our final layer is set to be a Dense layer with output shape NUM_CLASSES
+and softmax as an activation function.</p>
+<p>Results will be then a probability distribution of an input over certain labels/classes </p>
+<p>Final model is then compiled and categorical_crossentropy is set as a loss function.</p>
+<pre><code>from keras.layers.core import Dense, Dropout, Flatten
+from keras import regularizers 
+
+# Freeze the layers which you don't want to train. Here I am freezing the first 5 layers.
+for layer in model.layers[:21]:
+    layer.trainable = False
+
+#Adding custom Layers 
+x = model.output
+x = Flatten()(x)
+x = Dense(1024, activation=&quot;relu&quot;)(x)
+x = Dropout(0.1)(x)
+x = Dense(512, activation=&quot;relu&quot;)(x)
+predictions = Dense(NUM_CLASSES, activation=&quot;softmax&quot;)(x)
+
+# creating the final model 
+model_final = Model(model.input, predictions)
+
+# compile the model 
+model_final.compile(loss='categorical_crossentropy', optimizer=OPTIMIZER, metrics=['accuracy'])
+model_final.summary()
+</code></pre>
+
+<p>After that training the model can take place with simply performing a supervised learning with labeled data </p>
+<pre><code>history = model_final.fit(x_train, y_train, batch_size=BATCH_SIZE, 
+            epochs=500,
+            verbose=VERBOSE,
+            shuffle=True,
+            validation_split =VALIDATION_SPLIT,
+            callbacks = [tensorboard])
+</code></pre>
+
+<h3 id="clustering-process">Clustering process</h3>
+<p>All models developed above are designed for feature extraction out of our data set of waste images.</p>
+<p>In an unsupervised manner, we try to find similarities of our features using clusters.</p>
+<p>Our main used clustering algorithm is the k-means backed with sklearn library.</p>
+<p>feature are reshaped to fit the classifier inputs, then the clustering model named estimator is trained over the reshaped_features</p>
+<p>n_cluster is the number of possible cluster we'd like to have
+n_init is the number of time the <a href="http://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html">k-means algorithm</a> will be run with different centroid seeds.
+The final results will be the best output of n_init consecutive runs in terms of inertia</p>
+<pre><code>from sklearn.cluster import KMeans
+
+features_reshaped = features.reshape( len(features ),np.prod( features.shape[1:]))
+
+estimator = KMeans(init='k-means++', n_clusters = N_CLUSTER , n_init=14)
+estimator.fit(features_reshaped)
+</code></pre>
+
+<p>After that, the estimator will be returning clusterd data into "n_cluster" clusters.</p>
+<pre><code>all_predictions = estimator.predict(features_reshaped)
+
+</code></pre>
+
+<p>visualization of clusterd data is also possible into hitstograms </p>
+<p>Many additional measures can be taken into account to identify the clustering efficeincy such as measuring the accuracy or the sensibilty per cluster</p>
+<h4 id="data-distribution-within-clusters">Data distribution within clusters</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/accuracy_cluster12.jpg" width="600"></p>
+<h4 id="accuracy-per-cluster">Accuracy per cluster</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/accuracy_cluster13.jpg" width="600"></p>
+<h4 id="sensibilty-measure">Sensibilty measure</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/sensibilty12.jpg" width="600"></p>
+<h1 id="results-over-clustering-models">Results over clustering models :</h1>
+<h2 id="model-1">Model 1:</h2>
+<ul>
+<li>Convolutional Auto Enoder </li>
+</ul>
+<p>Hyperparmeters </p>
+<pre><code>BATCH_SIZE = 64
+EPOCHS = 500
+VERBOSE = True
+VALIDATION_SPLIT = 0.2
+SHUFFLE = True
+OPTIMIZER = RMSprop
+learning rate =2e-4
+input_shape 128x128x3
+Labeled data (626,128,128,3)
+unlabeled data (2000,128,128,3)
+</code></pre>
+
+<p>Output : </p>
+<p>Reconstruction error of AE : 0.6211</p>
+<p>When using the K-means cluster, we have mainly three clusters as output, visualization of clusterd data is as such :</p>
+<h4 id="data-distribution-within-clusters_1">Data distribution within clusters</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/cluster%20ConvAE1.jpg" width="600"></p>
+<h4 id="accuracy-per-cluster_1">Accuracy per cluster</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/accuracy%20conv%20AE12.jpg" width="600"></p>
+<h2 id="model-2">Model 2:</h2>
+<ul>
+<li>Denoising Auto Enoder </li>
+</ul>
+<p>Hyperparmeters </p>
+<pre><code>BATCH_SIZE = 64
+EPOCHS = 500
+VERBOSE = True
+VALIDATION_SPLIT = 0.2
+SHUFFLE = True
+OPTIMIZER = RMSprop
+learning rate =2e-4
+input_shape 128x128x3
+Labeled data (626,128,128,3)
+unlabeled data (2000,128,128,3)
+</code></pre>
+
+<p>Output : </p>
+<p>Reconstruction error of AE :  0.7833</p>
+<p>Clsutering results : </p>
+<h4 id="data-distribution-within-clusters_2">Data distribution within clusters</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/data_denoise1.jpg" width="600"></p>
+<h4 id="accuracy-per-cluster_2">Accuracy per cluster</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/accuracy_cluster_denoise12.jpg" width="500"></p>
+<h1 id="model-3">Model 3</h1>
+<ul>
+<li>Restricted Boltzmann Machine </li>
+</ul>
+<pre><code>
+RBM =  BinaryRBM(n_hidden_units=256,
+                 activation_function='sigmoid',
+                 optimization_algorithm='sgd',
+                 learning_rate=1e-3,
+                 n_epochs=30,
+                 contrastive_divergence_iter=1,
+                 batch_size=64,
+                    verbose=True)
+
+
+RBM.fit(x_train)
+
+[START] Pre-training step:
+&gt;&gt; Epoch 1 finished     RBM Reconstruction error 1952.491901
+&gt;&gt; Epoch 2 finished     RBM Reconstruction error 1922.482935
+&gt;&gt; Epoch 3 finished     RBM Reconstruction error 1904.396054
+&gt;&gt; Epoch 4 finished     RBM Reconstruction error 1891.619399
+&gt;&gt; Epoch 5 finished     RBM Reconstruction error 1871.401569
+&gt;&gt; Epoch 6 finished     RBM Reconstruction error 1856.040625
+&gt;&gt; Epoch 7 finished     RBM Reconstruction error 1839.471314
+&gt;&gt; Epoch 8 finished     RBM Reconstruction error 1819.748205
+&gt;&gt; Epoch 9 finished     RBM Reconstruction error 1806.192314
+&gt;&gt; Epoch 10 finished    RBM Reconstruction error 1799.971924
+[END] Pre-training step
+</code></pre>
+
+<p>After unsupervisely training the RBM, we move on feature extraction</p>
+<pre><code>features_train = RBM.transform(x_train)
+features_test = RBM.transform(x_test)
+
+
+</code></pre>
+
+<p>Features are then passed as inputs to our clutering model named estimator:</p>
+<pre><code>estimator = KMeans(init='k-means++', n_clusters = 3 , n_init=10)
+estimator.fit(features_reshaped)
+
+</code></pre>
+
+<p>Estimator is then tested on the unseen data in order to cluteries'em</p>
+<pre><code>features_test_reshaped = feature_test.reshape( len(feature_test ),np.prod( feature_test.shape[1:]))
+
+all_predictions = estimator.predict(feature_test)
+</code></pre>
+
+<p><img src="
+https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/rbm_data1.jpg" width="620"></p>
+<p>When plotting results we notice that our clusters contains heterogeneous data, means that clusters can contain data of diffenrent classes at the same time.</p>
+<p>This issue is in fact related to our deep learning model, the RBM and his ability to reconstruct it's input and extracted the best reprensenting features.</p>
+<p>As a solution, we developed a more sophisticated model, called the Deep Belief Network, which is typically a stack of RBMs where the output of an RBM is the input of the next one above.</p>
+<pre><code>DBN_Featuring = UnsupervisedDBN( hidden_layers_structure=[256, 256,256],
+                 activation_function='sigmoid',
+                 optimization_algorithm='sgd',
+                 learning_rate_rbm=1e-3,
+                 n_epochs_rbm=10,
+                 contrastive_divergence_iter=1,
+                 batch_size=32,
+                verbose=True)
+</code></pre>
+
+<p>Training the DBN goes through intermidiate steps, where each RBM is trained at once</p>
+<pre><code>DBN_Featuring.fit(x_train)
+
+[START] Pre-training step:
+&gt;&gt; Epoch 1 finished     RBM Reconstruction error 1952.491901
+&gt;&gt; Epoch 2 finished     RBM Reconstruction error 1922.482935
+&gt;&gt; Epoch 3 finished     RBM Reconstruction error 1904.396054
+&gt;&gt; Epoch 4 finished     RBM Reconstruction error 1891.619399
+&gt;&gt; Epoch 5 finished     RBM Reconstruction error 1871.401569
+&gt;&gt; Epoch 6 finished     RBM Reconstruction error 1856.040625
+&gt;&gt; Epoch 7 finished     RBM Reconstruction error 1839.471314
+&gt;&gt; Epoch 8 finished     RBM Reconstruction error 1819.748205
+&gt;&gt; Epoch 9 finished     RBM Reconstruction error 1806.192314
+&gt;&gt; Epoch 10 finished    RBM Reconstruction error 1799.971924
+&gt;&gt; Epoch 1 finished     RBM Reconstruction error 42.668121
+&gt;&gt; Epoch 2 finished     RBM Reconstruction error 36.282013
+&gt;&gt; Epoch 3 finished     RBM Reconstruction error 32.051567
+&gt;&gt; Epoch 4 finished     RBM Reconstruction error 29.067530
+&gt;&gt; Epoch 5 finished     RBM Reconstruction error 26.825274
+&gt;&gt; Epoch 6 finished     RBM Reconstruction error 25.047325
+&gt;&gt; Epoch 7 finished     RBM Reconstruction error 23.644447
+&gt;&gt; Epoch 8 finished     RBM Reconstruction error 22.503990
+&gt;&gt; Epoch 9 finished     RBM Reconstruction error 21.555744
+&gt;&gt; Epoch 10 finished    RBM Reconstruction error 20.732342
+&gt;&gt; Epoch 1 finished     RBM Reconstruction error 7.491046
+&gt;&gt; Epoch 2 finished     RBM Reconstruction error 5.832964
+&gt;&gt; Epoch 3 finished     RBM Reconstruction error 4.837579
+&gt;&gt; Epoch 4 finished     RBM Reconstruction error 4.221423
+&gt;&gt; Epoch 5 finished     RBM Reconstruction error 3.802794
+&gt;&gt; Epoch 6 finished     RBM Reconstruction error 3.514032
+&gt;&gt; Epoch 7 finished     RBM Reconstruction error 3.314745
+&gt;&gt; Epoch 8 finished     RBM Reconstruction error 3.177018
+&gt;&gt; Epoch 9 finished     RBM Reconstruction error 3.074382
+&gt;&gt; Epoch 10 finished    RBM Reconstruction error 2.999290
+[END] Pre-training step
+</code></pre>
+
+<p>As you can see in this figure, clusters are relatively more significant and we can easily detect a cluster where class 2.06.00 is very abundant whereas in the second cluster, our algorithm is finding elements of the tree classes very close.</p>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/dbn_data1.jpg" width="620"></p>
+<p>Many steps for ameliorating these results can be taken into account such as, training more and more the DBN on large sets of data, optimizing the hyperparameters.</p>
+<h3 id="classification-process">classification process</h3>
+<p>Every model developed before can be the input for a fully connected classifier.</p>
+<p>For example, for Denoising AE, the encoding part can be completed with a fully connected part on top of it with output a dense layer and a softmax activation function.</p>
+<pre><code>from keras.models import Model
+from keras.layers import Flatten, Dense, Dropout
+from keras import regularizers 
+
+for layer in loaded_model_encoder.layers[:10]:
+    loaded_model_encoder.trainable = False
+
+#Adding custom Layers 
+x = loaded_model_encoder.output
+x = Flatten()(x)
+x = Dense(1024, activation=&quot;relu&quot;)(x)
+x = Dropout(0.1,name='dropout_10')(x)
+x = Dense(512, activation=&quot;relu&quot;,kernel_initializer='uniform')(x)
+predictions = Dense(NUM_CLASSES, activation=&quot;softmax&quot;)(x)
+
+# creating the final model 
+model_final_classifier = Model(loaded_model_encoder.input, predictions)
+
+# compile the model 
+model_final_classifier.compile(loss='categorical_crossentropy', optimizer='RMSprop', metrics=['accuracy'])
+
+</code></pre>
+
+<p>Classifier model is then fine-tuned with labeled data in order to perform the classification task.</p>
+<pre><code>history_classifier = model_final_classifier.fit(x_train, y_train, batch_size=128, epochs=300,
+shuffle=True,validation_split =.1,
+callbacks = [tensorboard])
+</code></pre>
+
+<p>Evolution of loss function and accuracy evolution are also tracked with tensorboard</p>
+<h4 id="accuracy-and-loss-function-evolution">Accuracy and loss function evolution</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/tensorboard%20conv%20AE12.jpg" width="400"></p>
+<p>Classification with convolutional AE acheived an accuracy of 51.14% over train set and 34.57% over the test set.</p>
+<h2 id="for-the-denoising-auto-encoder">For the Denoising Auto Encoder</h2>
+<p>Classifier is as such: </p>
+<pre><code>from keras.models import Model
+from keras.layers import Flatten, Dense, Dropout
+from keras import regularizers 
+
+for layer in loaded_model_encoder.layers[:10]:
+    loaded_model_encoder.trainable = False
+
+#Adding custom Layers 
+x = loaded_model_encoder.output
+x = Flatten()(x)
+x = Dense(1024, activation=&quot;relu&quot;)(x)
+x = Dropout(0.1,name='dropout_10')(x)
+x = Dense(512, activation=&quot;relu&quot;)(x)
+predictions = Dense(NUM_CLASSES, activation=&quot;softmax&quot;)(x)
+
+# creating the final model 
+model_final_classifier = Model(loaded_model_encoder.input, predictions)
+
+# compile the model 
+model_final_classifier.compile(loss='categorical_crossentropy', optimizer='RMSprop', metrics=['accuracy'])
+model_final_classifier.summary()
+</code></pre>
+
+<h4 id="accuracy-and-loss-function-evolution_1">Accuracy and loss function evolution</h4>
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/reluf12.jpg" width="400"></p>
+<p>We notice that there is a gap between the validation and train sets, these variation could be handeled using regularizations methods and results are :</p>
+<pre><code>...
+
+x = Dropout(0.1,name='dropout_10')(x)
+
+x = Dense(512, activation=&quot;relu&quot;,kernel_initializer='uniform')(x)
+
+predictions = Dense(NUM_CLASSES, activation=&quot;softmax&quot;)(x)
+...
+</code></pre>
+
+<p><img src="https://raw.githubusercontent.com/WassimAbida/Harold-API/master/images_to_markdown/logs_denoise12.jpg" width="400"></p>
+<h1 id="acheived-results">Acheived Results</h1>
+<h2 id="classification">classification</h2>
+<p>For classification task using Dully connected models on top of feature extractors </p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th align="center">Epochs</th>
+<th align="right">Optimizer</th>
+<th align="center">learing rate</th>
+<th>Batch size</th>
+<th>validation split</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Denoise AE</td>
+<td align="center">300</td>
+<td align="right">RMSprop</td>
+<td align="center">0.001</td>
+<td>128</td>
+<td>0.1</td>
+<td>46.98%</td>
+</tr>
+<tr>
+<td>ConvAE</td>
+<td align="center">500</td>
+<td align="right">SGD(momentum=0.9)</td>
+<td align="center">0.0001</td>
+<td>64</td>
+<td>0.2</td>
+<td>34.57%</td>
+</tr>
+<tr>
+<td>DBN</td>
+<td align="center">400</td>
+<td align="right">Adam</td>
+<td align="center">0.001</td>
+<td>256</td>
+<td>0.2</td>
+<td>38.06%</td>
+</tr>
+<tr>
+<td>RBM</td>
+<td align="center">400</td>
+<td align="right">RMSprop</td>
+<td align="center">0.001</td>
+<td>256</td>
+<td>0.2</td>
+<td>34.93%</td>
+</tr>
+</tbody>
+</table>
+<h2 id="transfer-learning">transfer learning</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th align="center">Epochs</th>
+<th align="right">Optimizer</th>
+<th>learing rate</th>
+<th>Batch size</th>
+<th>validation split</th>
+<th>weights='imagenet'</th>
+<th>include top</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VGG16</td>
+<td align="center">500</td>
+<td align="right">RMSprop</td>
+<td>2e-4</td>
+<td>64</td>
+<td>0.2</td>
+<td>True</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<h2 id="clustering">Clustering</h2>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th align="center">Cluster model</th>
+<th align="right">number of test</th>
+<th>number of cluster</th>
+<th>Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Denoise AE</td>
+<td align="center">K-means</td>
+<td align="right">14</td>
+<td>3</td>
+<td>44.3%</td>
+</tr>
+<tr>
+<td>ConvAE</td>
+<td align="center">K-means</td>
+<td align="right">14</td>
+<td>3</td>
+<td>44.42%</td>
+</tr>
+<tr>
+<td>DBN</td>
+<td align="center">K-means</td>
+<td align="right">14</td>
+<td>3</td>
+<td>36.23%</td>
+</tr>
+<tr>
+<td>RBM</td>
+<td align="center">K-means</td>
+<td align="right">14</td>
+<td>3</td>
+<td>45.54%</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Accuracy for clustering is been measured as an average over accuracy per cluster </li>
+</ul>
+    </div>
+  </div>
+</body>
+</html>
